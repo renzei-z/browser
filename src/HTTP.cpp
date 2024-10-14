@@ -1,4 +1,7 @@
 #include <HTTP.h>
+#include <URL.h>
+#include <RC/SV.h>
+#include <RC/String.h>
 
 #if defined(__linux__)
 #include <sys/types.h>
@@ -7,21 +10,54 @@
 #include <arpa/inet.h>
 #include <unistd.h>
 #include <netdb.h>
+#include <errno.h>
 #include <stdio.h>
 #include <string.h>
 #else
 #error "Unsupported operating system."
 #endif
 
-const char *HTTPClient::get(const char *url) {
-    const char *host = resolve_host(url);
+RC::String HTTPClient::get(const char *url) {
+    RC::SV url_sv(url);
+    const char *domain_name = URL::extract_domain_name(url_sv).as_cstr();
+
+    const char *host = resolve_host(domain_name);
     if (!host) {
         printf("Could not resolve the host for URL: %s.\n", url);
         return nullptr;
     }
     printf("Host found: %s\n", host);
 
-    return nullptr;
+    int sockfd = socket_create(host);
+
+    if (sockfd < 0) {
+        printf("Could not open a socket to %s: %s.\n", host, strerror(errno));
+        return nullptr;
+    }
+    
+    RC::String request = "GET " + RC::String(url) + " HTTP/1.1\r\n"
+                        + "Host: " + RC::String(domain_name) + "\r\n"
+                        + "Connection: close\r\n\r\n";
+
+    send(sockfd, request.as_cstr(), request.len(), 0);
+
+    printf("%s\n", request.as_cstr());
+
+    RC::String response;
+    char buffer[4096];
+    while (true) {
+        ssize_t bytes_received = recv(sockfd, buffer, sizeof(buffer) - 1, 0);
+        if (bytes_received <= 0) {
+            break; // Connection closed
+        }
+        buffer[bytes_received] = '\0'; // Null-terminate the buffer
+        response.append(buffer);
+    }
+
+    close(sockfd); 
+    delete[] domain_name;
+
+    return response;
 }
 
 const char *HTTPClient::resolve_host(const char *url) {
@@ -65,5 +101,22 @@ void HTTPClient::handle_error(const char *error_msg) {
 }
 
 int HTTPClient::socket_create(const char *host) {
-    
+    int sockfd = socket(AF_INET, SOCK_STREAM, 0);
+    if (sockfd < 0) {
+        printf("Could not create socket for %s.\n", host);
+        return -1;
+    }
+
+    sockaddr_in server_addr;
+    server_addr.sin_family = AF_INET;
+    server_addr.sin_port = htons(HTTP_PORT);
+    inet_pton(AF_INET, host, &server_addr.sin_addr);
+
+    if (connect(sockfd, (struct sockaddr*)&server_addr, sizeof(server_addr)) < 0) {
+        printf("Could not connect to address %s through socket: %s", host, strerror(errno));
+        close(sockfd);
+        return -1;
+    }
+
+    return sockfd;
 }

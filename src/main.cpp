@@ -13,14 +13,9 @@ int main(int argc, char **argv) {
 
     HTTPClient client;
 
-    RC::SV url(default_url);
-    RC::SV domain = URL::extract_domain_name(url);
+    RC::String res = client.get(default_url);
 
-    printf("%.*s\n", (int)domain.len, domain.data);
-
-    const char *domain_cstr = domain.as_cstr();
-    const char *res = client.get(domain_cstr);
-    delete[] domain_cstr;
+    printf("%s\n", res.as_cstr());
 
     return 0;
 }
