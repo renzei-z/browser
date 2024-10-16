@@ -9,9 +9,4 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 include_directories(${CMAKE_SOURCE_DIR}/include)
 
-add_library(RC STATIC
-    src/RC/Vector.cpp
-)
-
 add_executable(bz src/main.cpp src/HTTP.cpp src/URL.cpp)
-target_link_libraries(bz PRIVATE RC)

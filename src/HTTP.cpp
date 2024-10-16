@@ -41,7 +41,7 @@ RC::String HTTPClient::get(const char *url) {
 
     send(sockfd, request.as_cstr(), request.len(), 0);
 
-    printf("%s\n", request.as_cstr());
+    printf("----------\nSent request: %s\n----------\n", request.as_cstr());
 
     RC::String response;
     char buffer[4096];
@@ -57,6 +57,7 @@ RC::String HTTPClient::get(const char *url) {
     close(sockfd); 
     delete[] domain_name;
 
+    printf("----------\nReceived response: %s\n----------\n", response.as_cstr());
     return response;
 }
 
@@ -119,4 +120,26 @@ int HTTPClient::socket_create(const char *host) {
     }
 
     return sockfd;
+}
+
+// HTTPResponse
+bool HTTPResponse::parse_response(RC::String str) {
+    valid = false;
+
+    RC::SV str_sv(str.as_cstr(), str.len()); 
+    RC::Vector<RC::SV> lines = str_sv.split_multiple('\n');
+    if (lines.is_empty()) return false;
+
+    RC::SV status_line = lines[0].trim();
+    RC::Vector<RC::SV> status_parts = status_line.split_multiple(' ');
+
+    if (status_parts.len() < 3) return false; // Invalid status line
+    
+    http_version = status_parts[0];
+    status_code = status_parts[1].to_int();
+    if (status_code < 0) return false;
+    // FIXME: Status phrase only parses first word; e.g. "Bad Request" -> "Bad"
+    status_phrase = status_parts[2];
+    
+    return true;
 }

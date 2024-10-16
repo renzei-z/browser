@@ -14,8 +14,12 @@ int main(int argc, char **argv) {
     HTTPClient client;
 
     RC::String res = client.get(default_url);
+    HTTPResponse response;
+    bool valid = response.parse_response(res);
 
-    printf("%s\n", res.as_cstr());
+    printf("%s %d %s\n", response.http_version.as_cstr(), response.status_code, response.status_phrase.as_cstr());
+
+    //printf("%s\n", res.as_cstr());
 
     return 0;
 }
