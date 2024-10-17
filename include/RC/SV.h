@@ -53,7 +53,7 @@ public:
     }
 
     // NOTE: Needs to be freed or deleted.
-    const char *as_cstr() {
+    const char *as_cstr() const {
         char *cstr = new char[len + 1];
         memcpy(cstr, data, len);
         cstr[len] = '\0';
@@ -92,6 +92,11 @@ public:
             result += val;
         }
         return result;
+    }
+
+    bool operator==(const SV& other) const {
+        if (len != other.len) return false;
+        return (strncmp(data, other.data, len) == 0);
     }
 
     const char *data;
