@@ -19,7 +19,9 @@ int main(int argc, char **argv) {
 
     printf("%s %d %s\n", response.http_version.as_cstr(), response.status_code, response.status_phrase.as_cstr());
 
-    //printf("%s\n", res.as_cstr());
+    for (size_t i = 0; i < response.headers.len(); i++) {
+        printf("Header: %s\n", response.headers[i].as_cstr());
+    }
 
     return 0;
 }

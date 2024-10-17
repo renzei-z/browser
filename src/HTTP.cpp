@@ -140,6 +140,13 @@ bool HTTPResponse::parse_response(RC::String str) {
     if (status_code < 0) return false;
     // FIXME: Status phrase only parses first word; e.g. "Bad Request" -> "Bad"
     status_phrase = status_parts[2];
+
+    for (size_t i = 1; i < lines.len(); i++) {
+        RC::SV line = lines[i].trim();
+        if (line.len == 0) break;
+
+        headers.push_back(line);
+    }
     
     return true;
 }
